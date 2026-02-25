@@ -8,6 +8,7 @@ export const CB_DIR_UP = "db:up"
 export const CB_DIR_CONFIRM = "db:confirm"
 export const CB_DIR_CANCEL = "db:cancel"
 export const CB_DIR_PAGE = "db:page:"
+export const CB_DIR_MKDIR = "db:mkdir"
 
 export const CB_WIN_BIND = "wb:sel:"
 export const CB_WIN_NEW = "wb:new"

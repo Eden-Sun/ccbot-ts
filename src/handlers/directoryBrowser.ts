@@ -14,6 +14,7 @@ import { config } from "../config"
 import {
   CB_DIR_CANCEL,
   CB_DIR_CONFIRM,
+  CB_DIR_MKDIR,
   CB_DIR_PAGE,
   CB_DIR_SELECT,
   CB_DIR_UP,
@@ -28,6 +29,7 @@ const DIRS_PER_PAGE = 6
 export const STATE_KEY = "state"
 export const STATE_BROWSING_DIRECTORY = "browsing_directory"
 export const STATE_SELECTING_WINDOW = "selecting_window"
+export const STATE_AWAITING_MKDIR = "awaiting_mkdir"
 export const BROWSE_PATH_KEY = "browse_path"
 export const BROWSE_PAGE_KEY = "browse_page"
 export const BROWSE_DIRS_KEY = "browse_dirs"
@@ -149,11 +151,12 @@ export function buildDirectoryBrowser(
   const actionRow: Array<{ text: string; callback_data: string }> = []
   const parentPath = resolve(join(path, ".."))
   if (parentPath !== path) {
-    actionRow.push({ text: "..", callback_data: CB_DIR_UP })
+    actionRow.push({ text: "⬆️ ..", callback_data: CB_DIR_UP })
   }
-  actionRow.push({ text: "Select", callback_data: CB_DIR_CONFIRM })
-  actionRow.push({ text: "Cancel", callback_data: CB_DIR_CANCEL })
+  actionRow.push({ text: "✅ Select", callback_data: CB_DIR_CONFIRM })
+  actionRow.push({ text: "❌ Cancel", callback_data: CB_DIR_CANCEL })
   buttons.push(actionRow)
+  buttons.push([{ text: "📁 New Folder", callback_data: CB_DIR_MKDIR }])
 
   const displayPath = path.replace(homedir(), "~")
   const text = subdirs.length === 0

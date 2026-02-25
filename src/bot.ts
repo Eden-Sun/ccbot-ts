@@ -33,6 +33,7 @@ import {
   CB_ASK_UP,
   CB_DIR_CANCEL,
   CB_DIR_CONFIRM,
+  CB_DIR_MKDIR,
   CB_DIR_PAGE,
   CB_DIR_SELECT,
   CB_DIR_UP,
@@ -48,6 +49,7 @@ import {
   BROWSE_DIRS_KEY,
   BROWSE_PAGE_KEY,
   BROWSE_PATH_KEY,
+  STATE_AWAITING_MKDIR,
   STATE_BROWSING_DIRECTORY,
   STATE_KEY,
   STATE_SELECTING_WINDOW,
@@ -78,7 +80,7 @@ import { NO_LINK_PREVIEW, safeReply, safeSend, sendWithFallback } from "./handle
 import { buildResponseParts } from "./handlers/responseBuilder"
 import { statusPollLoop } from "./handlers/statusPolling"
 
-import { resolve } from "path"
+import { join as pathJoin, resolve } from "path"
 import { mkdirSync, statSync } from "fs"
 
 // ---------------------------------------------------------------------------
@@ -700,6 +702,71 @@ async function textHandler(ctx: Context, bot: Bot): Promise<void> {
     delete userData["_pending_thread_text"]
   }
 
+  // Handle new folder name input
+  if (userData[STATE_KEY] === STATE_AWAITING_MKDIR) {
+    const mkdirTid = userData["_pending_thread_id"] as number | undefined
+    if (mkdirTid === threadId) {
+      const basePath = userData["_mkdir_base_path"] as string ?? process.cwd()
+      const browserMsgId = userData["_mkdir_msg_id"] as number | undefined
+      const folderName = text.trim().replace(/[/\\]/g, "-") // sanitize slashes
+
+      delete userData["_mkdir_base_path"]
+      delete userData["_mkdir_msg_id"]
+
+      if (!folderName) {
+        await safeSend(ctx.api as any, chatId, "❌ Folder name cannot be empty.", {
+          message_thread_id: threadId ?? undefined,
+        })
+        return
+      }
+
+      const newPath = pathJoin(basePath, folderName)
+      try {
+        mkdirSync(newPath, { recursive: true })
+      }
+      catch (e) {
+        userData[STATE_KEY] = STATE_BROWSING_DIRECTORY
+        await safeSend(ctx.api as any, chatId, `❌ Failed to create folder: ${e}`, {
+          message_thread_id: threadId ?? undefined,
+        })
+        return
+      }
+
+      // Navigate into the new folder
+      userData[STATE_KEY] = STATE_BROWSING_DIRECTORY
+      const [msgText, keyboard, subdirs] = buildDirectoryBrowser(newPath)
+      userData[BROWSE_PATH_KEY] = newPath
+      userData[BROWSE_PAGE_KEY] = 0
+      userData[BROWSE_DIRS_KEY] = subdirs
+
+      if (browserMsgId) {
+        try {
+          await ctx.api.editMessageText(chatId, browserMsgId, msgText, {
+            reply_markup: keyboard,
+            link_preview_options: NO_LINK_PREVIEW,
+          })
+        }
+        catch {
+          await safeSend(ctx.api as any, chatId, msgText, {
+            message_thread_id: threadId ?? undefined,
+            reply_markup: keyboard,
+          })
+        }
+      }
+      else {
+        await safeSend(ctx.api as any, chatId, msgText, {
+          message_thread_id: threadId ?? undefined,
+          reply_markup: keyboard,
+        })
+      }
+      return
+    }
+    // Stale mkdir from different thread — restore browse state
+    delete userData["_mkdir_base_path"]
+    delete userData["_mkdir_msg_id"]
+    userData[STATE_KEY] = STATE_BROWSING_DIRECTORY
+  }
+
   // Ignore text in directory browsing mode (same thread)
   if (userData[STATE_KEY] === STATE_BROWSING_DIRECTORY) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
@@ -1074,6 +1141,41 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     return
   }
 
+  if (data === CB_DIR_MKDIR) {
+    const pendingTid = userData["_pending_thread_id"] as number | undefined
+    if (pendingTid != null && cbThreadId !== pendingTid) {
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
+      return
+    }
+    const currentPath = (userData[BROWSE_PATH_KEY] as string) ?? process.cwd()
+    // Transition to awaiting folder name — keep pending state intact
+    userData[STATE_KEY] = STATE_AWAITING_MKDIR
+    userData["_mkdir_base_path"] = currentPath
+    userData["_mkdir_msg_id"] = msgId ?? null
+    const cancelKeyboard = { inline_keyboard: [[{ text: "❌ Cancel", callback_data: CB_DIR_CANCEL }]] }
+    if (msgId) {
+      try {
+        await bot.api.editMessageText(
+          chatId, msgId,
+          `📁 *New folder in* \`${currentPath.replace(/[`\\]/g, c => `\\${c}`)}\`\n\nType the folder name:`,
+          { parse_mode: "MarkdownV2", reply_markup: cancelKeyboard, link_preview_options: NO_LINK_PREVIEW },
+        )
+      }
+      catch {
+        try {
+          await bot.api.editMessageText(
+            chatId, msgId,
+            `📁 New folder in: ${currentPath}\n\nType the folder name:`,
+            { reply_markup: cancelKeyboard, link_preview_options: NO_LINK_PREVIEW },
+          )
+        }
+        catch {}
+      }
+    }
+    await ctx.answerCallbackQuery("Type the folder name")
+    return
+  }
+
   if (data === CB_DIR_CANCEL) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
@@ -1083,6 +1185,8 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     clearBrowseState(userData)
     delete userData["_pending_thread_id"]
     delete userData["_pending_thread_text"]
+    delete userData["_mkdir_base_path"]
+    delete userData["_mkdir_msg_id"]
     if (msgId) {
       try {
         await bot.api.editMessageText(chatId, msgId, "Cancelled", { link_preview_options: NO_LINK_PREVIEW })
