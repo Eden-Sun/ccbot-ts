@@ -25,10 +25,15 @@ import {
 
 export const INTERACTIVE_TOOL_NAMES = new Set(["AskUserQuestion", "ExitPlanMode"])
 
+/** Minimum ms an interactive UI message stays alive before it can be deleted. */
+const INTERACTIVE_MSG_MIN_TTL_MS = 10_000
+
 // (userId, threadId) → message_id
 const _interactiveMsgs = new Map<string, number>()
 // (userId, threadId) → window_id
 const _interactiveMode = new Map<string, string>()
+// (userId, threadId) → sent-at timestamp (ms)
+const _interactiveMsgSentAt = new Map<string, number>()
 
 function ikey(userId: number, threadId: number | null): string {
   return `${userId}:${threadId ?? 0}`
@@ -136,6 +141,7 @@ export async function handleInteractiveUI(
     if (sent) {
       _interactiveMsgs.set(ik, sent.message_id)
       _interactiveMode.set(ik, windowId)
+      _interactiveMsgSentAt.set(ik, Date.now()) // record when first sent
       return true
     }
   }
@@ -149,11 +155,24 @@ export async function clearInteractiveMsg(
   userId: number,
   bot: Bot | null,
   threadId: number | null,
+  force = false,
 ): Promise<void> {
   const ik = ikey(userId, threadId)
   const msgId = _interactiveMsgs.get(ik)
+
+  // Respect minimum TTL — if message was just sent, don't delete yet.
+  // Keep maps intact so the next status poll will retry.
+  // Pass force=true to bypass TTL (e.g., /kill, topic close, /unbind).
+  if (!force) {
+    const sentAt = _interactiveMsgSentAt.get(ik)
+    if (sentAt != null && (Date.now() - sentAt) < INTERACTIVE_MSG_MIN_TTL_MS) {
+      return
+    }
+  }
+
   _interactiveMsgs.delete(ik)
   _interactiveMode.delete(ik)
+  _interactiveMsgSentAt.delete(ik)
 
   if (bot && msgId != null) {
     const chatId = sessionManager.resolveChatId(userId, threadId)

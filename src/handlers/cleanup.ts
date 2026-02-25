@@ -15,5 +15,5 @@ export async function clearTopicState(
 ): Promise<void> {
   clearStatusMsgInfo(userId, threadId)
   clearToolMsgIdsForTopic(userId, threadId)
-  await clearInteractiveMsg(userId, bot, threadId)
+  await clearInteractiveMsg(userId, bot, threadId, true) // force: explicit topic teardown
 }

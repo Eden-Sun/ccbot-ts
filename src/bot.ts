@@ -1308,7 +1308,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     const w = await tmuxManager.findWindowById(windowId)
     if (w) {
       await tmuxManager.sendKeys(w.windowId, "Escape", false, false)
-      await clearInteractiveMsg(user.id, bot, tid)
+      await clearInteractiveMsg(user.id, bot, tid, true) // force: user explicitly pressed Esc
     }
     await ctx.answerCallbackQuery("⎋ Esc")
     return
@@ -1445,7 +1445,7 @@ export async function handleNewMessage(msg: NewMessage, bot: Bot): Promise<void>
 
     // Any non-interactive message means interaction is complete — delete UI message
     if (getInteractiveMsgId(userId, threadId) != null) {
-      await clearInteractiveMsg(userId, bot, threadId)
+      await clearInteractiveMsg(userId, bot, threadId, true) // force: Claude completed
     }
 
     const parts = buildResponseParts(msg.text, msg.isComplete, msg.contentType, msg.role)
