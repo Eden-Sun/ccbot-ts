@@ -1443,9 +1443,11 @@ export async function handleNewMessage(msg: NewMessage, bot: Bot): Promise<void>
       }
     }
 
-    // Any non-interactive message means interaction is complete — delete UI message
+    // Any non-interactive message means interaction is complete — delete UI message.
+    // Do NOT force: respect the minimum TTL so the user sees the prompt long enough
+    // to react before it disappears. (Esc, /kill, topic-close still force-clear.)
     if (getInteractiveMsgId(userId, threadId) != null) {
-      await clearInteractiveMsg(userId, bot, threadId, true) // force: Claude completed
+      await clearInteractiveMsg(userId, bot, threadId)
     }
 
     const parts = buildResponseParts(msg.text, msg.isComplete, msg.contentType, msg.role)

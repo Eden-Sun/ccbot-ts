@@ -51,8 +51,8 @@ export async function updateStatusMessage(
     shouldCheckNewUI = false
   }
   else if (interactiveWindow !== null) {
-    // User in interactive mode for different window — clear stale mode
-    await clearInteractiveMsg(userId, bot, threadId)
+    // User in interactive mode for different window — clear stale mode (force, not TTL-gated)
+    await clearInteractiveMsg(userId, bot, threadId, true)
   }
 
   if (shouldCheckNewUI && isInteractiveUI(paneText)) {
