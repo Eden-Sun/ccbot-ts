@@ -1,8 +1,12 @@
 {
   "name": "ccbot-ts",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "TypeScript port of six-ddc/ccbot — Telegram ↔ tmux bridge for Claude Code",
+  "module": "src/index.ts",
   "type": "module",
-  "private": true,
+  "bin": {
+    "ccbot-ts": "./bin/ccbot-ts.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "start": "bun run src/index.ts",

@@ -44,6 +44,14 @@ CCBot solves this by letting you **seamlessly continue the same session from Tel
 
 ## Installation
 
+### Option 1: Run directly with bunx (no clone needed)
+
+```bash
+bunx github:Eden-Sun/ccbot-ts
+```
+
+### Option 2: Clone and run
+
 ```bash
 git clone https://github.com/Eden-Sun/ccbot-ts.git
 cd ccbot-ts
@@ -112,6 +120,10 @@ This writes window-session mappings to `~/.ccbot/session_map.json`, so the bot a
 ## Usage
 
 ```bash
+# No install needed
+bunx github:Eden-Sun/ccbot-ts
+
+# Or if cloned locally
 bun run src/index.ts
 ```
 
