@@ -33,12 +33,14 @@ class SessionManager {
   threadBindings: Map<number, Map<number, string>> = new Map()
   windowDisplayNames: Map<string, string> = new Map()
   groupChatIds: Map<string, number> = new Map()
+  private _saveTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor() {
     this._loadState()
   }
 
-  private _saveState(): void {
+  private _doSave(): void {
+    this._saveTimer = null
     const windowStatesObj: Record<string, object> = {}
     for (const [k, v] of this.windowStates) {
       const d: Record<string, string> = { session_id: v.sessionId, cwd: v.cwd }
@@ -68,6 +70,18 @@ class SessionManager {
       window_display_names: Object.fromEntries(this.windowDisplayNames),
       group_chat_ids: groupChatIdsObj,
     })
+  }
+
+  private _saveState(): void {
+    if (this._saveTimer !== null) return
+    this._saveTimer = setTimeout(() => this._doSave(), 50)
+  }
+
+  flushState(): void {
+    if (this._saveTimer !== null) {
+      clearTimeout(this._saveTimer)
+      this._doSave()
+    }
   }
 
   private _loadState(): void {
@@ -285,11 +299,11 @@ class SessionManager {
     return null
   }
 
-  async findUsersForSession(sessionId: string): Promise<Array<[number, string, number]>> {
+  findUsersForSession(sessionId: string): Array<[number, string, number]> {
     const result: Array<[number, string, number]> = []
     for (const [userId, threadId, windowId] of this.iterThreadBindings()) {
-      const resolved = await this.resolveSessionForWindow(windowId)
-      if (resolved?.sessionId === sessionId) {
+      const state = this.windowStates.get(windowId)
+      if (state?.sessionId === sessionId) {
         result.push([userId, windowId, threadId])
       }
     }

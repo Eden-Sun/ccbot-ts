@@ -26,6 +26,16 @@ import { enqueueStatusUpdate, getMessageQueue } from "./messageQueue"
 const STATUS_POLL_INTERVAL = 1000 // ms
 const TOPIC_CHECK_INTERVAL = 60_000 // ms
 
+const _paneHashes: Map<string, string> = new Map()
+
+function simpleHash(s: string): string {
+  let h = 5381
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h, 33) ^ s.charCodeAt(i)
+  }
+  return (h >>> 0).toString(16)
+}
+
 export async function updateStatusMessage(
   bot: Bot,
   userId: number,
@@ -42,6 +52,10 @@ export async function updateStatusMessage(
   if (!paneText) return
 
   const interactiveWindow = getInteractiveWindow(userId, threadId)
+  const hashKey = `${userId}:${windowId}`
+  const hash = simpleHash(paneText)
+  if (interactiveWindow === null && _paneHashes.get(hashKey) === hash) return
+  _paneHashes.set(hashKey, hash)
   let shouldCheckNewUI = true
 
   if (interactiveWindow === windowId) {

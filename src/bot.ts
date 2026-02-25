@@ -1407,7 +1407,7 @@ export async function handleNewMessage(msg: NewMessage, bot: Bot): Promise<void>
     `handle_new_message [${status}]: session=${msg.sessionId}, text_len=${msg.text.length}`,
   )
 
-  const activeUsers = await sessionManager.findUsersForSession(msg.sessionId)
+  const activeUsers = sessionManager.findUsersForSession(msg.sessionId)
   if (!activeUsers.length) {
     console.log(`No active users for session ${msg.sessionId}`)
     return
@@ -1513,6 +1513,7 @@ async function postInit(bot: Bot): Promise<void> {
 
 async function postShutdown(): Promise<void> {
   _statusPollAbort?.abort()
+  sessionManager.flushState()
   await shutdownWorkers()
   if (_sessionMonitor) {
     _sessionMonitor.stop()
