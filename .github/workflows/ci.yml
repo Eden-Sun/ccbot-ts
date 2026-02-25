@@ -23,3 +23,10 @@ jobs:
 
       - name: Type check
         run: bun run tsc --noEmit
+
+      - name: Verify bin entry loads
+        run: |
+          # Should fail with config error (missing token), not a module error
+          output=$(bun run bin/ccbot-ts.ts 2>&1 || true)
+          echo "$output"
+          echo "$output" | grep -q "TELEGRAM_BOT_TOKEN" && echo "✅ bin entry OK" || (echo "❌ unexpected error" && exit 1)
