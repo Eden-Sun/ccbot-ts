@@ -84,7 +84,7 @@ export function convertMarkdown(text: string): string {
     if (start > lastEnd) {
       parts.push(convertPlainMarkdown(text.slice(lastEnd, start)))
     }
-    parts.push(renderExpandableQuote(m[1]))
+    parts.push(renderExpandableQuote(m[1] ?? ""))
     lastEnd = start + m[0].length
   }
   if (lastEnd < text.length) {
@@ -120,43 +120,43 @@ function convertPlainMarkdown(text: string): string {
 
   // 2. Inline code
   for (const m of text.matchAll(/`([^`\n]+)`/g)) {
-    addSpan(m.index, m.index + m[0].length, "`" + codeEscape(m[1]) + "`")
+    addSpan(m.index, m.index + m[0].length, "`" + codeEscape(m[1] ?? "") + "`")
   }
 
   // 3. Links [text](url)
   for (const m of text.matchAll(/\[([^\]]*)\]\(([^)]*)\)/g)) {
     addSpan(m.index, m.index + m[0].length,
-      "[" + mdv2Escape(m[1]) + "](" + urlEscape(m[2]) + ")")
+      "[" + mdv2Escape(m[1] ?? "") + "](" + urlEscape(m[2] ?? "") + ")")
   }
 
   // 4. Bold **text**
   for (const m of text.matchAll(/\*\*([^*\n]+)\*\*/g)) {
-    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape(m[1]) + "*")
+    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape(m[1] ?? "") + "*")
   }
 
   // 5. Bold __text__
   for (const m of text.matchAll(/__([^_\n]+)__/g)) {
-    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape(m[1]) + "*")
+    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape(m[1] ?? "") + "*")
   }
 
   // 6. Italic *text* (not **)
   for (const m of text.matchAll(/(?<!\*)\*([^*\n]+)\*(?!\*)/g)) {
-    addSpan(m.index, m.index + m[0].length, "_" + mdv2Escape(m[1]) + "_")
+    addSpan(m.index, m.index + m[0].length, "_" + mdv2Escape(m[1] ?? "") + "_")
   }
 
   // 7. Italic _text_
   for (const m of text.matchAll(/(?<!_)_([^_\n]+)_(?!_)/g)) {
-    addSpan(m.index, m.index + m[0].length, "_" + mdv2Escape(m[1]) + "_")
+    addSpan(m.index, m.index + m[0].length, "_" + mdv2Escape(m[1] ?? "") + "_")
   }
 
   // 8. Strikethrough ~~text~~
   for (const m of text.matchAll(/~~([^~\n]+)~~/g)) {
-    addSpan(m.index, m.index + m[0].length, "~" + mdv2Escape(m[1]) + "~")
+    addSpan(m.index, m.index + m[0].length, "~" + mdv2Escape(m[1] ?? "") + "~")
   }
 
   // 9. Headers at line start
   for (const m of text.matchAll(/^#{1,6} (.+)$/gm)) {
-    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape(m[1].trim()) + "*")
+    addSpan(m.index, m.index + m[0].length, "*" + mdv2Escape((m[1] ?? "").trim()) + "*")
   }
 
   // Sort by start position

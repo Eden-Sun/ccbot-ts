@@ -133,7 +133,7 @@ function _mergeContentTasks(first: MessageTask, queue: MessageTask[], userId: nu
   let i = 0
 
   while (i < queue.length) {
-    const candidate = queue[i]
+    const candidate = queue[i]!
     if (candidate.taskType !== "content") break
     if (candidate.windowId !== first.windowId) break
     if (candidate.contentType === "tool_use" || candidate.contentType === "tool_result") break

@@ -60,7 +60,7 @@ export function buildResponseParts(
   const total = chunks.length
 
   if (total === 1) {
-    return prefix ? [`${prefix}${separator}${chunks[0]}`] : [chunks[0]]
+    return prefix ? [`${prefix}${separator}${chunks[0]!}`] : [chunks[0]!]
   }
 
   return chunks.map((chunk, i) => {

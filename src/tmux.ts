@@ -55,7 +55,7 @@ class TmuxManager {
       if (!line.trim()) continue
       const parts = line.split("\t")
       if (parts.length < 3) continue
-      const [windowId, windowName, cwd, paneCurrentCommand] = parts
+      const [windowId, windowName, cwd, paneCurrentCommand] = parts as [string, string, string, string?]
       if (windowName === "__main__") continue
       windows.push({
         windowId,

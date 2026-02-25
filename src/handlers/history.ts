@@ -131,7 +131,7 @@ export async function sendHistory(opts: SendHistoryOpts): Promise<void> {
       let hhMm = ""
       if (ts) {
         try {
-          const timePart = ts.includes("T") ? ts.split("T")[1] : ts
+          const timePart = ts.includes("T") ? (ts.split("T")[1] ?? ts) : ts
           hhMm = timePart.slice(0, 5)
         }
         catch {}
@@ -163,7 +163,7 @@ export async function sendHistory(opts: SendHistoryOpts): Promise<void> {
     const pages = splitMessage(fullText, 4096)
     const pageIndex = offset < 0 ? pages.length - 1 : Math.max(0, Math.min(offset, pages.length - 1))
 
-    text = pages[pageIndex]
+    text = pages[pageIndex]!
     keyboard = buildHistoryKeyboard(windowId, pageIndex, pages.length, startByte, endByte)
   }
 

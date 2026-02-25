@@ -224,22 +224,13 @@ class SessionManager {
 
     // Fallback: glob search
     if (!filePath || !existsSync(filePath)) {
-      const { glob } = await import("glob").catch(() => ({ glob: null }))
-      if (glob) {
-        const matches = await glob(`*/${sessionId}.jsonl`, { cwd: config.claudeProjectsPath, absolute: true })
-        if (matches.length > 0) filePath = matches[0]
-        else return null
+      const g = new Bun.Glob(`**/${sessionId}.jsonl`)
+      const matches: string[] = []
+      for await (const m of g.scan({ cwd: config.claudeProjectsPath, absolute: true })) {
+        matches.push(m)
       }
-      else {
-        // Use Bun's glob
-        const g = new Bun.Glob(`**/${sessionId}.jsonl`)
-        const matches = []
-        for await (const m of g.scan({ cwd: config.claudeProjectsPath, absolute: true })) {
-          matches.push(m)
-        }
-        if (matches.length > 0) filePath = matches[0]
-        else return null
-      }
+      if (matches.length > 0) filePath = matches[0]!
+      else return null
     }
 
     if (!filePath || !existsSync(filePath)) return null

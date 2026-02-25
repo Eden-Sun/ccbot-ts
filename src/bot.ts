@@ -443,7 +443,7 @@ async function forwardCommandHandler(ctx: Context): Promise<void> {
   captureGroupChatId(ctx, user.id, threadId)
 
   const cmdText = ctx.message?.text ?? ""
-  const ccSlash = cmdText.split("@")[0]
+  const ccSlash = cmdText.split("@")[0] ?? ""
 
   const wid = sessionManager.resolveWindowForThread(user.id, threadId)
   if (!wid) {
@@ -546,7 +546,7 @@ async function photoHandler(ctx: Context): Promise<void> {
   }
 
   // Download highest-resolution photo
-  const photo = msg.photo[msg.photo.length - 1]
+  const photo = msg.photo[msg.photo.length - 1]!
   const tgFile = await ctx.api.getFile(photo.file_id)
   if (!tgFile.file_path) {
     await safeSend(ctx.api as any, chatId, "❌ Failed to get file path.", { message_thread_id: threadId })
@@ -843,13 +843,13 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
 
       if (parts.length < 4) {
         const [off, wid] = rest.split(":", 2)
-        offsetStr = off
-        windowId = wid
+        offsetStr = off ?? ""
+        windowId = wid ?? ""
       }
       else {
-        offsetStr = parts[0]
-        startByte = parseInt(parts[parts.length - 2])
-        endByte = parseInt(parts[parts.length - 1])
+        offsetStr = parts[0]!
+        startByte = parseInt(parts[parts.length - 2]!)
+        endByte = parseInt(parts[parts.length - 1]!)
         windowId = parts.slice(1, parts.length - 2).join(":")
       }
       const offset = parseInt(offsetStr)
@@ -883,7 +883,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data.startsWith(CB_DIR_SELECT)) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale browser (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
       return
     }
     const idx = parseInt(data.slice(CB_DIR_SELECT.length))
@@ -891,14 +891,14 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
 
     const cachedDirs = (userData[BROWSE_DIRS_KEY] as string[]) ?? []
     if (idx < 0 || idx >= cachedDirs.length) {
-      await ctx.answerCallbackQuery("Directory list changed, please refresh", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Directory list changed, please refresh", show_alert: true })
       return
     }
 
     const currentPath = (userData[BROWSE_PATH_KEY] as string) ?? process.cwd()
-    const newPath = resolve(currentPath, cachedDirs[idx])
+    const newPath = resolve(currentPath, cachedDirs[idx]!)
     if (!require("fs").existsSync(newPath)) {
-      await ctx.answerCallbackQuery("Directory not found", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Directory not found", show_alert: true })
       return
     }
 
@@ -929,7 +929,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data === CB_DIR_UP) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale browser (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
       return
     }
     const currentPath = (userData[BROWSE_PATH_KEY] as string) ?? process.cwd()
@@ -960,7 +960,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data.startsWith(CB_DIR_PAGE)) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale browser (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
       return
     }
     const pg = parseInt(data.slice(CB_DIR_PAGE.length))
@@ -997,7 +997,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       clearBrowseState(userData)
       delete userData["_pending_thread_id"]
       delete userData["_pending_thread_text"]
-      await ctx.answerCallbackQuery("Stale browser (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
       return
     }
 
@@ -1076,7 +1076,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data === CB_DIR_CANCEL) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale browser (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale browser (topic mismatch)", show_alert: true })
       return
     }
     clearBrowseState(userData)
@@ -1096,7 +1096,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data.startsWith(CB_WIN_BIND)) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale picker (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale picker (topic mismatch)", show_alert: true })
       return
     }
     const idx = parseInt(data.slice(CB_WIN_BIND.length))
@@ -1104,20 +1104,20 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
 
     const cachedWindows = (userData[UNBOUND_WINDOWS_KEY] as string[]) ?? []
     if (idx < 0 || idx >= cachedWindows.length) {
-      await ctx.answerCallbackQuery("Window list changed, please retry", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Window list changed, please retry", show_alert: true })
       return
     }
-    const selectedWid = cachedWindows[idx]
+    const selectedWid = cachedWindows[idx]!
     const w = await tmuxManager.findWindowById(selectedWid)
     if (!w) {
       const display = sessionManager.getDisplayName(selectedWid)
-      await ctx.answerCallbackQuery(`Window '${display}' no longer exists`, { show_alert: true })
+      await ctx.answerCallbackQuery({ text: `Window '${display}' no longer exists`, show_alert: true })
       return
     }
 
     const threadId = cbThreadId
     if (threadId == null) {
-      await ctx.answerCallbackQuery("Not in a topic", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Not in a topic", show_alert: true })
       return
     }
 
@@ -1164,7 +1164,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data === CB_WIN_NEW) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale picker (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale picker (topic mismatch)", show_alert: true })
       return
     }
     clearWindowPickerState(userData)
@@ -1196,7 +1196,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
   if (data === CB_WIN_CANCEL) {
     const pendingTid = userData["_pending_thread_id"] as number | undefined
     if (pendingTid != null && cbThreadId !== pendingTid) {
-      await ctx.answerCallbackQuery("Stale picker (topic mismatch)", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Stale picker (topic mismatch)", show_alert: true })
       return
     }
     clearWindowPickerState(userData)
@@ -1217,13 +1217,13 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     const windowId = data.slice(CB_SCREENSHOT_REFRESH.length)
     const w = await tmuxManager.findWindowById(windowId)
     if (!w) {
-      await ctx.answerCallbackQuery("Window no longer exists", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Window no longer exists", show_alert: true })
       return
     }
 
     const text = await tmuxManager.capturPane(w.windowId, true)
     if (!text) {
-      await ctx.answerCallbackQuery("Failed to capture pane", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Failed to capture pane", show_alert: true })
       return
     }
 
@@ -1239,7 +1239,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       await ctx.answerCallbackQuery("Refreshed")
     }
     catch {
-      await ctx.answerCallbackQuery("Failed to refresh", { show_alert: true })
+      await ctx.answerCallbackQuery({ text: "Failed to refresh", show_alert: true })
     }
     return
   }
@@ -1374,7 +1374,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
 
     const [tmuxKey, enter, literal] = keyInfo
     const w = await tmuxManager.findWindowById(windowId)
-    if (!w) { await ctx.answerCallbackQuery("Window not found", { show_alert: true }); return }
+    if (!w) { await ctx.answerCallbackQuery({ text: "Window not found", show_alert: true }); return }
 
     await tmuxManager.sendKeys(w.windowId, tmuxKey, enter, literal)
     await ctx.answerCallbackQuery(KEY_LABELS[keyId] ?? keyId)

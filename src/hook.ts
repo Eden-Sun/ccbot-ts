@@ -73,7 +73,7 @@ async function findWindowByCwd(cwd: string): Promise<{ windowId: string; windowN
   for (const line of output.split("\n")) {
     const parts = line.split("\t")
     if (parts.length < 3) continue
-    const [windowId, windowName, panePath] = parts
+    const [windowId, windowName, panePath] = parts as [string, string, string, ...string[]]
     if (panePath === cwd || cwd.startsWith(panePath + "/") || panePath.startsWith(cwd + "/")) {
       return { windowId, windowName }
     }
@@ -110,9 +110,9 @@ async function processHookEvent(payload: Record<string, unknown>): Promise<strin
     const raw = new TextDecoder().decode(result.stdout).trim()
     const parts = raw.split(":", 3)
     if (parts.length >= 3) {
-      const [, windowId, wname] = parts
+      const [, windowId, wname] = parts as [string, string, string, ...string[]]
       sessionWindowKey = `${sessionName}:${windowId}`
-      windowName = wname
+      windowName = wname ?? ""
     }
     else {
       return `failed to parse tmux output: ${raw}`
@@ -151,7 +151,7 @@ export function startHookServer(port = DEFAULT_HOOK_PORT): ReturnType<typeof Bun
       if (req.method === "POST" && url.pathname === "/hook") {
         let payload: Record<string, unknown>
         try {
-          payload = await req.json()
+          payload = await req.json() as Record<string, unknown>
         }
         catch {
           return new Response("Bad Request: invalid JSON", { status: 400 })

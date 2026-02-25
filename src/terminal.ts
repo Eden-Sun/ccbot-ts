@@ -58,7 +58,7 @@ const STATUS_SPINNERS = new Set(["·", "✻", "✽", "✶", "✳", "✢"])
 function findChromeSeparator(lines: string[], searchLastN = 10): number {
   const start = Math.max(0, lines.length - searchLastN)
   for (let i = lines.length - 1; i >= start; i--) {
-    if (/─{20,}/.test(lines[i])) {
+    if (/─{20,}/.test(lines[i]!)) {
       return i
     }
   }
@@ -79,13 +79,13 @@ export function extractInteractiveContent(paneText: string): InteractiveUIConten
   for (const pattern of UI_PATTERNS) {
     // Scan top-down for a top pattern match
     for (let topIdx = 0; topIdx < strippedLines.length; topIdx++) {
-      const topMatch = pattern.top.some(re => re.test(strippedLines[topIdx]))
+      const topMatch = pattern.top.some(re => re.test(strippedLines[topIdx]!))
       if (!topMatch) continue
 
       // Now look for the bottom pattern after minGap lines
       const bottomStart = topIdx + pattern.minGap + 1
       for (let botIdx = bottomStart; botIdx < strippedLines.length; botIdx++) {
-        const botMatch = pattern.bottom.some(re => re.test(strippedLines[botIdx]))
+        const botMatch = pattern.bottom.some(re => re.test(strippedLines[botIdx]!))
         if (!botMatch) continue
 
         // Found a match — extract content between top and bottom (inclusive)
@@ -115,7 +115,7 @@ export function parseStatusLine(paneText: string): string | null {
   const sepIdx = findChromeSeparator(lines, 10)
   if (sepIdx < 1) return null
 
-  const statusLine = lines[sepIdx - 1].trim()
+  const statusLine = lines[sepIdx - 1]!.trim()
   if (!statusLine) return null
 
   // Check if the first character is a spinner
@@ -141,7 +141,7 @@ export function stripPaneChrome(lines: string[]): string[] {
   const searchStart = Math.max(0, lines.length - 10)
   let topmostSep = -1
   for (let i = searchStart; i < lines.length; i++) {
-    if (/─{20,}/.test(lines[i])) {
+    if (/─{20,}/.test(lines[i]!)) {
       if (topmostSep === -1 || i < topmostSep) {
         topmostSep = i
       }
@@ -164,7 +164,7 @@ export function extractBashOutput(paneText: string, command: string): string | n
 
   // Search from bottom up for the command invocation
   for (let i = stripped.length - 1; i >= 0; i--) {
-    const line = stripped[i]
+    const line = stripped[i]!
     // Match "! command" pattern (Claude Code uses ! prefix for bash)
     if (line.includes(`! ${command}`) || line.includes(`❯ ${command}`) || line.includes(`$ ${command}`)) {
       const output = stripped.slice(i).join("\n")

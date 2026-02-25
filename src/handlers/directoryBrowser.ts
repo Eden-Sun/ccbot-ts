@@ -68,7 +68,7 @@ export function buildWindowPicker(
   for (let i = 0; i < windows.length; i += 2) {
     const row: Array<{ text: string; callback_data: string }> = []
     for (let j = 0; j < 2 && i + j < windows.length; j++) {
-      const name = windows[i + j][1]
+      const name = windows[i + j]![1]!
       const display = name.length > 13 ? name.slice(0, 12) + "…" : name
       row.push({
         text: `🖥 ${display}`,
@@ -126,7 +126,7 @@ export function buildDirectoryBrowser(
   for (let i = 0; i < pageDirs.length; i += 2) {
     const row: Array<{ text: string; callback_data: string }> = []
     for (let j = 0; j < 2 && i + j < pageDirs.length; j++) {
-      const name = pageDirs[i + j]
+      const name = pageDirs[i + j]!
       const display = name.length > 13 ? name.slice(0, 12) + "…" : name
       const idx = start + i + j
       row.push({

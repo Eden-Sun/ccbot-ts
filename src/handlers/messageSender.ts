@@ -6,6 +6,7 @@
  */
 
 import type { Bot, RawApi } from "grammy"
+import { InputFile } from "grammy"
 import type { InlineKeyboardMarkup, LinkPreviewOptions, Message } from "@grammyjs/types"
 import { convertMarkdown, stripSentinels } from "../markdown"
 
@@ -54,8 +55,8 @@ export async function sendPhoto(
   if (!imageData.length) return
   try {
     if (imageData.length === 1) {
-      const [, bytes] = imageData[0]
-      await bot.api.sendPhoto(chatId, new Blob([bytes]), opts)
+      const [, bytes] = imageData[0]!
+      await bot.api.sendPhoto(chatId, new InputFile(bytes), opts)
     }
     else {
       const media = imageData.map(([, bytes]) => ({
