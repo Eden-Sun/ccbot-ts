@@ -50,9 +50,7 @@ export function clearWindowPickerState(userData: Record<string, unknown> | null 
 /** Build window picker UI for unbound tmux windows. */
 export function buildWindowPicker(
   windows: Array<[string, string, string]>,
-): [string, InlineKeyboardMarkup, string[]] {
-  const windowIds = windows.map(([wid]) => wid)
-
+): [string, InlineKeyboardMarkup] {
   const home = homedir()
   const lines: string[] = [
     "*Bind to Existing Window*\n",
@@ -68,11 +66,14 @@ export function buildWindowPicker(
   for (let i = 0; i < windows.length; i += 2) {
     const row: Array<{ text: string; callback_data: string }> = []
     for (let j = 0; j < 2 && i + j < windows.length; j++) {
-      const name = windows[i + j]![1]!
+      const win = windows[i + j]!
+      const name = win[1]!
+      const wid = win[0]!
       const display = name.length > 13 ? name.slice(0, 12) + "…" : name
+      // Encode window ID directly — no cache needed, survives bot restarts
       row.push({
         text: `🖥 ${display}`,
-        callback_data: `${CB_WIN_BIND}${i + j}`,
+        callback_data: (`${CB_WIN_BIND}${wid}`).slice(0, 64),
       })
     }
     buttons.push(row)
@@ -84,7 +85,7 @@ export function buildWindowPicker(
   ])
 
   const text = lines.join("\n")
-  return [text, { inline_keyboard: buttons }, windowIds]
+  return [text, { inline_keyboard: buttons }]
 }
 
 /** Build directory browser UI. Returns [text, keyboard, subdirs]. */

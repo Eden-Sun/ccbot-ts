@@ -51,7 +51,6 @@ import {
   STATE_BROWSING_DIRECTORY,
   STATE_KEY,
   STATE_SELECTING_WINDOW,
-  UNBOUND_WINDOWS_KEY,
   buildDirectoryBrowser,
   buildWindowPicker,
   clearBrowseState,
@@ -737,9 +736,8 @@ async function textHandler(ctx: Context, bot: Bot): Promise<void> {
       .map(w => [w.windowId, w.windowName, w.cwd] as [string, string, string])
 
     if (unbound.length > 0) {
-      const [msgText, keyboard, winIds] = buildWindowPicker(unbound)
+      const [msgText, keyboard] = buildWindowPicker(unbound)
       userData[STATE_KEY] = STATE_SELECTING_WINDOW
-      userData[UNBOUND_WINDOWS_KEY] = winIds
       userData["_pending_thread_id"] = threadId
       userData["_pending_thread_text"] = text
       await safeSend(ctx.api as any, chatId, msgText, {
@@ -1001,18 +999,21 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       return
     }
 
+    // Fall back to callback thread if state was lost (e.g. bot restarted mid-session)
+    const effectiveThreadId = pendingThreadId ?? confirmThreadId
+
     clearBrowseState(userData)
 
     const [success, message, createdWname, createdWid] = await tmuxManager.createWindow(selectedPath, undefined, true)
     if (success && createdWid) {
-      console.log(`Window created: ${createdWname} (id=${createdWid}) at ${selectedPath} (user=${user.id}, thread=${pendingThreadId})`)
+      console.log(`Window created: ${createdWname} (id=${createdWid}) at ${selectedPath} (user=${user.id}, thread=${effectiveThreadId})`)
       await sessionManager.waitForSessionMapEntry(createdWid)
 
-      if (pendingThreadId != null) {
-        sessionManager.bindThread(user.id, pendingThreadId, createdWid, createdWname)
-        const resolvedChat = sessionManager.resolveChatId(user.id, pendingThreadId)
+      if (effectiveThreadId != null) {
+        sessionManager.bindThread(user.id, effectiveThreadId, createdWid, createdWname)
+        const resolvedChat = sessionManager.resolveChatId(user.id, effectiveThreadId)
         try {
-          await bot.api.editForumTopic(resolvedChat, pendingThreadId, { name: createdWname })
+          await bot.api.editForumTopic(resolvedChat, effectiveThreadId, { name: createdWname })
         }
         catch (e) {
           console.debug(`Failed to rename topic: ${e}`)
@@ -1040,7 +1041,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
           const [sendOk, sendMsg] = await sessionManager.sendToWindow(createdWid, pendingText)
           if (!sendOk) {
             await safeSend(bot.api, resolvedChat, `❌ Failed to send pending message: ${sendMsg}`, {
-              message_thread_id: pendingThreadId,
+              message_thread_id: effectiveThreadId,
             })
           }
         }
@@ -1099,15 +1100,10 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       await ctx.answerCallbackQuery({ text: "Stale picker (topic mismatch)", show_alert: true })
       return
     }
-    const idx = parseInt(data.slice(CB_WIN_BIND.length))
-    if (isNaN(idx)) { await ctx.answerCallbackQuery("Invalid data"); return }
+    // Window ID is encoded directly in callback_data (survives bot restarts)
+    const selectedWid = data.slice(CB_WIN_BIND.length)
+    if (!selectedWid) { await ctx.answerCallbackQuery("Invalid data"); return }
 
-    const cachedWindows = (userData[UNBOUND_WINDOWS_KEY] as string[]) ?? []
-    if (idx < 0 || idx >= cachedWindows.length) {
-      await ctx.answerCallbackQuery({ text: "Window list changed, please retry", show_alert: true })
-      return
-    }
-    const selectedWid = cachedWindows[idx]!
     const w = await tmuxManager.findWindowById(selectedWid)
     if (!w) {
       const display = sessionManager.getDisplayName(selectedWid)
@@ -1167,6 +1163,8 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       await ctx.answerCallbackQuery({ text: "Stale picker (topic mismatch)", show_alert: true })
       return
     }
+    // Fall back to callback thread if state was lost (e.g. bot restarted mid-session)
+    const effectiveTid = pendingTid ?? cbThreadId
     clearWindowPickerState(userData)
     const startPath = process.cwd()
     const [msgText, keyboard, subdirs] = buildDirectoryBrowser(startPath)
@@ -1174,6 +1172,8 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     userData[BROWSE_PATH_KEY] = startPath
     userData[BROWSE_PAGE_KEY] = 0
     userData[BROWSE_DIRS_KEY] = subdirs
+    // Preserve (or restore) the pending thread so CB_DIR_CONFIRM can bind correctly
+    userData["_pending_thread_id"] = effectiveTid
     if (msgId) {
       try {
         await bot.api.editMessageText(chatId, msgId, convertMarkdown(msgText), {
