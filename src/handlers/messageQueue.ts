@@ -179,7 +179,7 @@ async function _processContentTask(bot: Bot, userId: number, task: MessageTask):
           link_preview_options: NO_LINK_PREVIEW,
         })
         if (task.imageData?.length) {
-          await sendPhoto(bot, chatId, task.imageData, threadKwargs(task.threadId))
+          await sendPhoto(bot.api, chatId, task.imageData, threadKwargs(task.threadId))
         }
         await _checkAndSendStatus(bot, userId, wid, task.threadId)
         return
@@ -192,7 +192,7 @@ async function _processContentTask(bot: Bot, userId: number, task: MessageTask):
             link_preview_options: NO_LINK_PREVIEW,
           })
           if (task.imageData?.length) {
-            await sendPhoto(bot, chatId, task.imageData, threadKwargs(task.threadId))
+            await sendPhoto(bot.api, chatId, task.imageData, threadKwargs(task.threadId))
           }
           await _checkAndSendStatus(bot, userId, wid, task.threadId)
           return
@@ -219,7 +219,7 @@ async function _processContentTask(bot: Bot, userId: number, task: MessageTask):
       }
     }
 
-    const sent = await sendWithFallback(bot, chatId, part, threadKwargs(task.threadId))
+    const sent = await sendWithFallback(bot.api, chatId, part, threadKwargs(task.threadId))
     if (sent) lastMsgId = sent.message_id
   }
 
@@ -230,7 +230,7 @@ async function _processContentTask(bot: Bot, userId: number, task: MessageTask):
 
   // Send images
   if (task.imageData?.length) {
-    await sendPhoto(bot, chatId, task.imageData, threadKwargs(task.threadId))
+    await sendPhoto(bot.api, chatId, task.imageData, threadKwargs(task.threadId))
   }
 
   // After content, check and send status
@@ -357,7 +357,7 @@ async function _doSendStatusMessage(
     try { await bot.api.sendChatAction(chatId, "typing") } catch {}
   }
 
-  const sent = await sendWithFallback(bot, chatId, text, threadId ? { message_thread_id: threadId } : {})
+  const sent = await sendWithFallback(bot.api, chatId, text, threadId ? { message_thread_id: threadId } : {})
   if (sent) {
     _statusMsgInfo.set(skey, [sent.message_id, windowId, text])
   }

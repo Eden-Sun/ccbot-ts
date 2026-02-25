@@ -634,7 +634,7 @@ async function captureBashOutput(
       const display = output.length > 3800 ? "… " + output.slice(-3800) : output
 
       if (msgId == null) {
-        const sent = await sendWithFallback(bot, chatId, display, { message_thread_id: threadId })
+        const sent = await sendWithFallback(bot.api, chatId, display, { message_thread_id: threadId })
         if (sent) msgId = sent.message_id
       }
       else {
@@ -857,7 +857,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
       const w = await tmuxManager.findWindowById(windowId)
       if (w) {
         await sendHistory({
-          bot: bot,
+          bot: bot.api,
           chatId,
           windowId,
           offset,
@@ -1039,7 +1039,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
           delete userData["_pending_thread_id"]
           const [sendOk, sendMsg] = await sessionManager.sendToWindow(createdWid, pendingText)
           if (!sendOk) {
-            await safeSend(bot, resolvedChat, `❌ Failed to send pending message: ${sendMsg}`, {
+            await safeSend(bot.api, resolvedChat, `❌ Failed to send pending message: ${sendMsg}`, {
               message_thread_id: pendingThreadId,
             })
           }
@@ -1152,7 +1152,7 @@ async function callbackHandler(ctx: Context, bot: Bot): Promise<void> {
     if (pendingText) {
       const [sendOk, sendMsg] = await sessionManager.sendToWindow(selectedWid, pendingText)
       if (!sendOk) {
-        await safeSend(bot, resolvedChat, `❌ Failed to send pending message: ${sendMsg}`, {
+        await safeSend(bot.api, resolvedChat, `❌ Failed to send pending message: ${sendMsg}`, {
           message_thread_id: threadId,
         })
       }

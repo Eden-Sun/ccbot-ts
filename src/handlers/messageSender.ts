@@ -5,7 +5,7 @@
  * bot.api methods with explicit chatId from sessionManager.resolveChatId().
  */
 
-import type { Bot, RawApi } from "grammy"
+import type { Api } from "grammy"
 import { InputFile } from "grammy"
 import type { InlineKeyboardMarkup, LinkPreviewOptions, Message } from "@grammyjs/types"
 import { convertMarkdown, stripSentinels } from "../markdown"
@@ -14,7 +14,7 @@ export const NO_LINK_PREVIEW: LinkPreviewOptions = { is_disabled: true }
 
 /** Send a message with MarkdownV2, falling back to plain text on failure. */
 export async function sendWithFallback(
-  bot: Bot,
+  api: Api,
   chatId: number,
   text: string,
   opts: {
@@ -27,7 +27,7 @@ export async function sendWithFallback(
     ...opts,
   }
   try {
-    return await bot.api.sendMessage(chatId, convertMarkdown(text), {
+    return await api.sendMessage(chatId, convertMarkdown(text), {
       parse_mode: "MarkdownV2",
       ...extra,
     }) as any
@@ -35,7 +35,7 @@ export async function sendWithFallback(
   catch (e: any) {
     if (isRetryAfter(e)) throw e
     try {
-      return await bot.api.sendMessage(chatId, stripSentinels(text), extra) as any
+      return await api.sendMessage(chatId, stripSentinels(text), extra) as any
     }
     catch (e2: any) {
       if (isRetryAfter(e2)) throw e2
@@ -47,7 +47,7 @@ export async function sendWithFallback(
 
 /** Send photo(s). Single photo or media group. */
 export async function sendPhoto(
-  bot: Bot,
+  api: Api,
   chatId: number,
   imageData: Array<[string, Uint8Array]>,
   opts: { message_thread_id?: number } = {},
@@ -56,14 +56,14 @@ export async function sendPhoto(
   try {
     if (imageData.length === 1) {
       const [, bytes] = imageData[0]!
-      await bot.api.sendPhoto(chatId, new InputFile(bytes), opts)
+      await api.sendPhoto(chatId, new InputFile(bytes), opts)
     }
     else {
       const media = imageData.map(([, bytes]) => ({
         type: "photo" as const,
         media: new Blob([bytes]),
       }))
-      await bot.api.sendMediaGroup(chatId, media as any, opts)
+      await api.sendMediaGroup(chatId, media as any, opts)
     }
   }
   catch (e: any) {
@@ -74,7 +74,7 @@ export async function sendPhoto(
 
 /** Reply to a message with MarkdownV2, fallback to plain text. */
 export async function safeReply(
-  bot: Bot,
+  api: Api,
   chatId: number,
   text: string,
   opts: {
@@ -88,7 +88,7 @@ export async function safeReply(
     ...opts,
   }
   try {
-    return await bot.api.sendMessage(chatId, convertMarkdown(text), {
+    return await api.sendMessage(chatId, convertMarkdown(text), {
       parse_mode: "MarkdownV2",
       ...extra,
     }) as any
@@ -96,7 +96,7 @@ export async function safeReply(
   catch (e: any) {
     if (isRetryAfter(e)) throw e
     try {
-      return await bot.api.sendMessage(chatId, stripSentinels(text), extra) as any
+      return await api.sendMessage(chatId, stripSentinels(text), extra) as any
     }
     catch (e2: any) {
       if (isRetryAfter(e2)) throw e2
@@ -108,7 +108,7 @@ export async function safeReply(
 
 /** Edit a message with MarkdownV2, fallback to plain text. */
 export async function safeEdit(
-  bot: Bot,
+  api: Api,
   chatId: number,
   messageId: number,
   text: string,
@@ -119,7 +119,7 @@ export async function safeEdit(
     ...opts,
   }
   try {
-    await bot.api.editMessageText(chatId, messageId, convertMarkdown(text), {
+    await api.editMessageText(chatId, messageId, convertMarkdown(text), {
       parse_mode: "MarkdownV2",
       ...extra,
     })
@@ -127,7 +127,7 @@ export async function safeEdit(
   catch (e: any) {
     if (isRetryAfter(e)) throw e
     try {
-      await bot.api.editMessageText(chatId, messageId, stripSentinels(text), extra)
+      await api.editMessageText(chatId, messageId, stripSentinels(text), extra)
     }
     catch (e2: any) {
       if (isRetryAfter(e2)) throw e2
@@ -138,7 +138,7 @@ export async function safeEdit(
 
 /** Send a message with MarkdownV2, fallback to plain text. */
 export async function safeSend(
-  bot: Bot,
+  api: Api,
   chatId: number,
   text: string,
   opts: {
@@ -151,7 +151,7 @@ export async function safeSend(
     ...opts,
   }
   try {
-    await bot.api.sendMessage(chatId, convertMarkdown(text), {
+    await api.sendMessage(chatId, convertMarkdown(text), {
       parse_mode: "MarkdownV2",
       ...extra,
     })
@@ -159,7 +159,7 @@ export async function safeSend(
   catch (e: any) {
     if (isRetryAfter(e)) throw e
     try {
-      await bot.api.sendMessage(chatId, stripSentinels(text), extra)
+      await api.sendMessage(chatId, stripSentinels(text), extra)
     }
     catch (e2: any) {
       if (isRetryAfter(e2)) throw e2

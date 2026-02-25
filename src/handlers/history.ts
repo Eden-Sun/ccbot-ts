@@ -7,7 +7,7 @@
  *   - Respects config.showUserMessages filter
  */
 
-import type { Bot } from "grammy"
+import type { Api } from "grammy"
 import type { InlineKeyboardMarkup } from "@grammyjs/types"
 import { config } from "../config"
 import { sessionManager } from "../session"
@@ -43,7 +43,7 @@ function buildHistoryKeyboard(
 }
 
 export interface SendHistoryOpts {
-  bot: Bot
+  bot: Api
   chatId: number
   windowId: string
   /** 0-based page index; -1 = last page (default) */
