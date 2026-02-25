@@ -15,18 +15,12 @@ const UI_PATTERNS: UIPattern[] = [
     minGap: 1,
   },
   {
-    // AskUserQuestion multi-tab
+    // AskUserQuestion multi-tab: requires at least 2 numbered options visible
+    // (single-tab variant removed — too broad, matches Claude prompt/conversation output)
     name: "AskUserQuestion",
-    top: [/\s+\d+\.\s+/],
-    bottom: [/\s+\d+\.\s+/],
-    minGap: 0,
-  },
-  {
-    // AskUserQuestion single-tab
-    name: "AskUserQuestion",
-    top: [/❯\s+/],
-    bottom: [/\s{2,}/],
-    minGap: 0,
+    top: [/^\s+\d+\.\s+\S/],
+    bottom: [/^\s+\d+\.\s+\S/],
+    minGap: 1,
   },
   {
     name: "PermissionPrompt",
